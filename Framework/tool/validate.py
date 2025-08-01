@@ -1,9 +1,9 @@
-from tool.container import DockerContainer
+from tool.container_factory import ContainerClass
 from logger import logger
 import os
 import sys
 
-class Validate(DockerContainer):
+class Validate(ContainerClass):
 
     work_dir=""
     config_file=""
@@ -26,8 +26,10 @@ class Validate(DockerContainer):
 
 
     def config(self):
-        core_config_command="bash -c \"echo core | tee /proc/sys/kernel/core_pattern && echo performance | tee cpu*/cpufreq/scaling_governor && echo 0 | tee /proc/sys/kernel/randomize_va_space\""
-        self.exec_command(core_config_command,workdir="/sys/devices/system/cpu")
+        # Skip system configuration for Apptainer as it requires root privileges
+        if os.environ.get('VUL4C_CONTAINER_BACKEND', 'docker').lower() != 'apptainer':
+            core_config_command="bash -c \"echo core | tee /proc/sys/kernel/core_pattern && echo performance | tee cpu*/cpufreq/scaling_governor && echo 0 | tee /proc/sys/kernel/randomize_va_space\""
+            self.exec_command(core_config_command,workdir="/sys/devices/system/cpu")
 
         config_file=os.path.join(self.work_dir,"config")
         setup_file=os.path.join(self.work_dir,"setup.sh")

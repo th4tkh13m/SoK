@@ -1,10 +1,14 @@
 import os
-import docker
+try:
+    import docker
+except ImportError:
+    docker = None
 import random
 
 from logger import logger
+from .container_base import ContainerBase
 
-class DockerContainer(object):
+class DockerContainer(ContainerBase):
     
     image_name = ""
     repository_name=""
@@ -24,15 +28,13 @@ class DockerContainer(object):
     client = None
 
     def __init__(self, repository_name, tag_name, container_name, localhost_dir, container_dir, gpu=False):
+        super().__init__(repository_name, tag_name, container_name, localhost_dir, container_dir, gpu)
+        
+        if docker is None:
+            raise ImportError("Docker Python SDK is not installed. Install it with: pip install docker")
+        
         self.client = docker.from_env()
-        self.repository_name=repository_name
-        self.tag_name = tag_name
-        self.container_name = container_name
-        self.localhost_dir=localhost_dir
-        self.container_dir=container_dir
-        self.gpu=gpu
 
-        self.image_name=f"{self.repository_name}:{self.tag_name}"
         if self.image_exists():
             self.image=self.get_image()
         else:
@@ -241,3 +243,11 @@ class DockerContainer(object):
     def add_permissions(self, file_path):
         permission_command = f"chmod -R a+x  {file_path}"
         return self.exec_command(f"bash -c \"{permission_command}\"") != 0
+
+    def cleanup(self):
+        """Clean up Docker container resources"""
+        logger.info(f"Cleaning up Docker container: {self.container.id}")
+        try:
+            self.stop_container()
+        except Exception as ex:
+            logger.warning(f"Error stopping container: {ex}")

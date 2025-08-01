@@ -1,9 +1,9 @@
-from tool.container import DockerContainer
+from tool.container_factory import ContainerClass
 from logger import logger
 import os
 import sys
 
-class VulnFix(DockerContainer):
+class VulnFix(ContainerClass):
 
     repair_dir=""
     config_file=""
@@ -24,13 +24,26 @@ class VulnFix(DockerContainer):
 
 
     def config(self):
-        core_config_command="bash -c \"echo core | tee /proc/sys/kernel/core_pattern && echo performance | tee cpu*/cpufreq/scaling_governor && echo 0 | tee /proc/sys/kernel/randomize_va_space\""
-        self.exec_command(core_config_command,workdir="/sys/devices/system/cpu")
+        # Skip system-level configuration for Apptainer (requires privileged access)
+        from tool.container_factory import CONTAINER_BACKEND
+        if CONTAINER_BACKEND != "apptainer":
+            core_config_command="bash -c \"echo core | tee /proc/sys/kernel/core_pattern && echo performance | tee cpu*/cpufreq/scaling_governor && echo 0 | tee /proc/sys/kernel/randomize_va_space\""
+            self.exec_command(core_config_command,workdir="/sys/devices/system/cpu")
+        else:
+            logger.info("Skipping system configuration for Apptainer (requires privileged access)")
 
         config_file=os.path.join(self.repair_dir,"config")
         setup_file=os.path.join(self.repair_dir,"setup.sh")
         
-        exploit_name=self.find_file(self.repair_dir,1,"exploit*")[0]
+        logger.info(f"Looking for exploit files in repair_dir: {self.repair_dir}")
+        exploit_files = self.find_file(self.repair_dir,1,"exploit*")
+        logger.info(f"Found exploit files: {exploit_files}")
+        
+        if not exploit_files:
+            logger.error(f"No exploit files found in {self.repair_dir}")
+            raise RuntimeError(f"No exploit files found in {self.repair_dir}")
+        
+        exploit_name = exploit_files[0]
         exploit_file=os.path.join(self.repair_dir, exploit_name)
         
         config_exist=self.file_exists(config_file)

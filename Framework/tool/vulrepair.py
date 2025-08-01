@@ -1,9 +1,9 @@
-from tool.container import DockerContainer
+from tool.container_factory import ContainerClass
 from logger import logger
 import os
 import sys
 
-class VulRepair(DockerContainer):
+class VulRepair(ContainerClass):
 
     def __init__(
             self,

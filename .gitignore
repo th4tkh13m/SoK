@@ -1,3 +1,13 @@
 .DS_Store
 ~*
 *.sif
+vul4c_runtime
+vul4c-result
+*.pyc
+__pycache__
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.cpython*

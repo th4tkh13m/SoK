@@ -1,5 +1,4 @@
 import os
-import docker
 import random
 
 from logger import logger

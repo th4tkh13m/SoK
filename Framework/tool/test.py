@@ -1,10 +1,10 @@
-from tool.container import DockerContainer
+from tool.container_factory import ContainerClass
 from tool.data import Data
 from logger import logger
 import os
 import sys
 
-class Test(DockerContainer):
+class Test(ContainerClass):
 
     config_file=""
     result_dir="/vul4c_result"

@@ -1,9 +1,9 @@
-from tool.container import DockerContainer
+from tool.container_factory import ContainerClass
 from logger import logger
 import os
 import sys
 
-class Senx(DockerContainer):
+class Senx(ContainerClass):
 
     repair_dir=""
     config_file=""

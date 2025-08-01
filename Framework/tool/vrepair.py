@@ -1,9 +1,9 @@
-from tool.container import DockerContainer
+from tool.container_factory import ContainerClass
 from logger import logger
 import os
 import sys
 
-class VRepair(DockerContainer):
+class VRepair(ContainerClass):
 
     work_dir=""
     result_dir="/vul4c_result"

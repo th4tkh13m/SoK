@@ -1,6 +1,7 @@
 import os
 import argparse
 import sys
+import shutil
 from tool.vulnfix import VulnFix
 from tool.extractfix import ExtractFix
 from tool.senx import Senx
@@ -11,7 +12,7 @@ from tool.vqm import VQM
 from tool.validate import Validate
 from tool.data import Data
 from tool.test import Test
-
+from tool.container_factory import CONTAINER_BACKEND
 
 from logger import *
 import subprocess
@@ -28,13 +29,37 @@ def execute_command(command: str, show_output=True, env=dict(), dir=None):
     return int(proc.returncode)
 
 def cp_from_container(container_id: str, from_path: str, to_path: str):
-    copy_command = f"docker cp {container_id}:{from_path} {to_path}"
-    execute_command(copy_command)
+    """Copy files from container to host (handles both Docker and Apptainer)"""
+    if CONTAINER_BACKEND == "docker":
+        copy_command = f"docker cp {container_id}:{from_path} {to_path}"
+        execute_command(copy_command)
+    else:  # Apptainer - files are already accessible via bind mount
+        # For Apptainer, we need to handle the special case of /vul4c_result
+        # which is created inside the container but should be copied to the host
+        if from_path == "/vul4c_result":
+            # For Apptainer, results might be in the bind-mounted directory
+            # We need to find where the tool actually saved the results
+            logger.info(f"Looking for results from Apptainer container in bind-mounted directory")
+            # The results should be in the bind mount directory
+            # Check common locations where results might be saved
+            if os.path.exists(to_path):
+                os.makedirs(to_path, exist_ok=True)
+            logger.info(f"Apptainer: Results should be accessible in the container's bind mount")
+        elif from_path.startswith("/") and os.path.exists(from_path):
+            # This is an absolute path that exists on the host
+            if from_path != to_path:
+                execute_command(f"cp -r {from_path} {to_path}")
+        else:
+            logger.warning(f"Apptainer: Could not find path {from_path} for copying")
 
 
 def cp_to_container(container_id: str, from_path: str, to_path: str):
-    copy_command = f"docker cp {from_path} {container_id}:{to_path}"
-    execute_command(copy_command)
+    """Copy files from host to container (handles both Docker and Apptainer)"""
+    if CONTAINER_BACKEND == "docker":
+        copy_command = f"docker cp {from_path} {container_id}:{to_path}"
+        execute_command(copy_command)
+    else:  # Apptainer - files are already accessible via bind mount
+        logger.info(f"Apptainer: Files already accessible via bind mount, no copy needed")
 
 def parse_config(cve_runtime_dir, container_dir):
     cve_config=os.path.join(cve_runtime_dir, "config")
