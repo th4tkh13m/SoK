@@ -121,6 +121,9 @@ def main():
         tool_docker.repair()
         tool_docker.save_result()
         cp_from_container(container_id,"/vul4c_result",result_dir)
+        # Stop and remove the container
+        tool_docker.stop_container()
+        tool_docker.remove_container()
 
     elif tool in ["ExtractFix","Senx"]:
         repair_name="vul4c_"+tool.lower()+"_"+"repair"+cveid.lower()+"_"+stamp
@@ -193,5 +196,6 @@ def main():
         test_container = Test(cve_runtime_dir, container_dir, container_dir, test_name, d)
         test_id=test_container.container.id
         test_container.run()
+        cp_from_container(test_id,"/vul4c_result/test_result",result_dir)
 if __name__ == "__main__":
     main()
