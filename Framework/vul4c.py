@@ -153,6 +153,10 @@ def main():
 
         execute_command(f"mv {validate_result_dir}/* {result_dir}/vul4c_result")
         shutil.rmtree(validate_result_dir)
+        repair_container.stop_container()
+        repair_container.remove_container()
+        validate_container.stop_container()
+        validate_container.remove_container()
 
     elif tool in ["VRepair", "VulRepair","VulMaster","VQM"]:
         inference_name="vul4c_"+tool.lower()+"_"+"inference"+cveid.lower()+"_"+stamp
@@ -186,7 +190,10 @@ def main():
         validate_container.run()
         cp_from_container(validate_id,"/vul4c_result",result_dir)
 
-
+        inference_container.stop_container()
+        inference_container.remove_container()
+        validate_container.stop_container()
+        validate_container.remove_container()
     else:
         logger.error("tool dont exist, please check your tool name")
     
