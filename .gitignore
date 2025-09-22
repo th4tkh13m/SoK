@@ -1,2 +1,5 @@
 .DS_Store
 ~*
+build/
+*.cpython-*
+vul4c.egg-info
