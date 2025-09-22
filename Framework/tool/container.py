@@ -92,10 +92,11 @@ class DockerContainer(object):
         logger.info(f"pulling docker image {self.image_name}")
         image = None
         try:
-            self.image = self.client.images.pull(repository=self.repository_name, tag=self.tag_name)
+            self.image = self.client.images.get(f"{self.repository_name}:{self.tag_name}")
             logger.info(f"the docker image {self.image_name} id: {self.image.id}")
         except docker.errors.APIError as ex: 
             logger.error(f"{ex}")
+            self.image = self.client.images.pull(repository=self.repository_name, tag=self.tag_name)
             logger.error("unable to pull image: docker daemon error")
             raise ex
         except IOError as ex:
@@ -105,7 +106,17 @@ class DockerContainer(object):
             logger.error(f"{ex}")
             logger.error("unable to pull image: unhandled exception")
             raise ex
-
+    
+    def remove_container(self):
+        logger.info(f"removing docker container {self.container.id}")
+        try:
+            self.container.remove(force=True)
+        except docker.errors.APIError as ex: 
+            logger.warning(f"{ex}")
+            logger.warning("unable to remove container: docker daemon error")
+        except Exception as ex:
+            logger.warning(f"{ex}")
+            logger.warning("unable to remove container: unhandled exception")
 
     def find_container(self):
 

@@ -3,6 +3,7 @@ from tool.data import Data
 from logger import logger
 import os
 import sys
+import subprocess
 
 class Test(DockerContainer):
 
@@ -46,6 +47,8 @@ class Test(DockerContainer):
         
         self.config_file=config_file
         self.test_file=test_file
+        print(f"DEBUG: Config file set to {self.config_file}")
+        print(f"DEBUG: Test file set to {self.test_file}")
 
     #fix-file-path save the relative path of fix file and split with "|"
     def parse_config_file(self, config_file):
@@ -69,7 +72,8 @@ class Test(DockerContainer):
             config_file=os.path.join(candidate_dir,"config")
             if os.path.exists(os.path.join(candidate_dir,"config")):
                 self.parse_config_file(config_file)
-            
+            print(f"DEBUG: Parsed fix_file: {self.data.fix_file}")
+            print(f"DEBUG: Candidate directory: {self.data.source}")
             files=[os.path.split(item)[1] for item in self.data.fix_file.split("|")]
             if len(files)==1:
                 old_file=files[0]
@@ -79,6 +83,8 @@ class Test(DockerContainer):
                     new_files=[os.path.join(candidate_dir,"file.new.c")]
                 elif os.path.exists(os.path.join(candidate_dir,"patch_file")):
                     new_files=[os.path.join(candidate_dir,"patch_file")]
+                elif os.path.exists(os.path.join(self.data.runtime_host,"vulnfix.patch")):
+                    new_files=[os.path.join(self.data.runtime_host,"vulnfix.patch")]
             else:
                 new_files=[os.path.join(candidate_dir,item) for item in files]
             
@@ -89,12 +95,18 @@ class Test(DockerContainer):
             
             test_command=f"bash -c \"bash {self.test_file} {self.data.source} {new_files} {self.data.fix_file}\""
             exit_code,output=self.exec_command(test_command,workdir=self.work_dir)
-        
+            print(f"DEBUG: Executed test command: {test_command}")
+            print(f"DEBUG: Test command exit code: {exit_code}")
+            print(f"DEBUG: Test command output: {output}")
+
             if exit_code != 0:
                 test_result[dir]=False
             else:
                 test_result[dir]=True
+            if os.path.exists(os.path.join(self.data.runtime_host,"vulnfix.patch")):
+                break
         return test_result
+    
 
     def save_result(self,test_result_dic):
 
@@ -105,6 +117,7 @@ class Test(DockerContainer):
             else:
                 contents+=f"{key}:Fail\n"
         test_result_file=os.path.join(self.data.abs_path_host,"test_result")
+        container_result_file = os.path.join(self.data.abs_path_container,"test_result")
 
         with open(test_result_file, mode='w') as f:
             f.write(contents)
@@ -112,7 +125,7 @@ class Test(DockerContainer):
         mkdir_command=f"bash -c \"mkdir {self.result_dir}\""
         exit_code,output=self.exec_command(mkdir_command)
 
-        self.cp_file(test_result_file,self.result_dir)
+        self.cp_file(container_result_file,self.result_dir)
 
     def run(self):
         self.config()
